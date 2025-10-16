@@ -28,7 +28,9 @@ class Job {
       description: json['description'] ?? '',
       company: json['company'] ?? '',
       location: json['location'] ?? '',
-      salary: json['salary'],
+      salary: (json['salary'] is String)
+          ? (int.tryParse(json['salary']) ?? 0)
+          : (json['salary'] as int?),
       skills: (json['skills'] != null)
           ? List<String>.from(json['skills'])
           : <String>[],

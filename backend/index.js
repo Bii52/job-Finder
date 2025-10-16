@@ -5,6 +5,11 @@ import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
 
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined. Please set this environment variable.');
+  process.exit(1);
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {

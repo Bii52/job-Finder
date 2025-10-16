@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/models/job.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/screens/chat_screen.dart';
-import 'package:frontend/services/api_service.dart' as services;
-import 'package:frontend/services/job_service.dart';
+import 'package:frontend/services/api_service.dart';
 import 'package:provider/provider.dart';
 
 class JobDetailScreen extends StatefulWidget {
@@ -21,7 +20,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final apiService = services.ApiService(); // We'll use this to start a chat
+    final apiService = ApiService(); // We'll use this to start a chat
     final isFavorite = authProvider.user?.favorites.any((favJob) => favJob.id == widget.job.id) ?? false;
     final isMyJob = authProvider.user?.id == widget.job.employer.id;
 
@@ -217,9 +216,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       onPressed: _isApplying ? null : () async {
                         setState(() => _isApplying = true);
                         try {
-                          // Giả sử bạn có một JobService instance hoặc thêm applyForJob vào ApiService
-                          final jobService = JobService();
-                          await jobService.applyForJob(widget.job.id);
+                          // Sử dụng ApiService đã được tập trung hóa
+                          await apiService.applyForJob(widget.job.id);
 
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/models/job.dart';
-import 'package:frontend/services/job_service.dart';
+import 'package:frontend/services/api_service.dart';
 
 class JobProvider with ChangeNotifier {
-  final JobService _jobService = JobService();
+  final ApiService _apiService = ApiService();
   List<Job> _jobs = [];
   bool _isLoading = false;
 
@@ -14,7 +14,12 @@ class JobProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _jobs = await _jobService.getJobs();
+      final newJobs = await _apiService.getJobs();
+      // ApiService trả về null nếu status là 304 (Not Modified)
+      // Chỉ cập nhật state nếu có dữ liệu mới trả về.
+      if (newJobs != null) {
+        _jobs = newJobs;
+      }
     } catch (e) {
       // Handle error appropriately
       print(e);
@@ -26,7 +31,7 @@ class JobProvider with ChangeNotifier {
 
   Future<void> addJob(String title, String description, String company, String location, int? salary, List<String> skills) async {
     try {
-      final newJob = await _jobService.createJob(title, description, company, location, salary, skills);
+      final newJob = await _apiService.createJob(title, description, company, location, salary, skills);
       _jobs.add(newJob);
       notifyListeners();
     } catch (e) {
@@ -37,7 +42,7 @@ class JobProvider with ChangeNotifier {
 
   Future<void> updateJob(String id, String title, String description, String company, String location, int? salary, List<String> skills) async {
     try {
-      final updatedJob = await _jobService.updateJob(id, title, description, company, location, salary, skills);
+      final updatedJob = await _apiService.updateJob(id, title, description, company, location, salary, skills);
       final index = _jobs.indexWhere((job) => job.id == id);
       if (index != -1) {
         _jobs[index] = updatedJob;
@@ -51,7 +56,7 @@ class JobProvider with ChangeNotifier {
 
   Future<void> deleteJob(String id) async {
     try {
-      await _jobService.deleteJob(id);
+      await _apiService.deleteJob(id);
       _jobs.removeWhere((job) => job.id == id);
       notifyListeners();
     } catch (e) {
@@ -62,7 +67,7 @@ class JobProvider with ChangeNotifier {
 
   Future<List<dynamic>> getApplicants(String jobId) async {
     try {
-      final applicants = await _jobService.getApplicants(jobId);
+      final applicants = await _apiService.getApplicants(jobId);
       return applicants;
     } catch (e) {
       print(e);

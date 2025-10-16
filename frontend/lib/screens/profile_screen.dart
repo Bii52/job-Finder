@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/models/job.dart';
 import 'package:frontend/models/user.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/job_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/services/api_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   final User? userToShow;
@@ -14,6 +17,10 @@ class ProfileScreen extends StatelessWidget {
     // If userToShow is provided, use it. Otherwise, use the logged-in user.
     final user = userToShow ?? authProvider.user;
     final isCurrentUser = userToShow == null || userToShow?.id == authProvider.user?.id;
+
+    // Check if the viewer is an employer and the profile is a job seeker
+    final bool canInvite = authProvider.user?.role == 'employer' &&
+        user?.role == 'job_seeker' && !isCurrentUser;
 
     return Scaffold(
       body: Container(
@@ -177,6 +184,13 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 40),
 
                       // Action Buttons
+                      if (canInvite) ...[
+                        _InviteButton(userToInvite: user!),
+                        const SizedBox(height: 24),
+                      ],
+
+                      // Only show logout/settings for the current user's profile
+                      if (isCurrentUser)
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
@@ -249,6 +263,7 @@ class ProfileScreen extends StatelessWidget {
     if (names.length >= 2) {
       return '${names[0][0]}${names[1][0]}'.toUpperCase();
     }
+    if (name.isEmpty) return 'U';
     return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
   }
 
@@ -258,6 +273,8 @@ class ProfileScreen extends StatelessWidget {
         return 'Người tìm việc';
       case 'employer':
         return 'Nhà tuyển dụng';
+      case 'admin':
+        return 'Quản trị viên';
       default:
         return 'N/A';
     }
@@ -269,6 +286,8 @@ class ProfileScreen extends StatelessWidget {
         return Icons.person_search_rounded;
       case 'employer':
         return Icons.business_rounded;
+      case 'admin':
+        return Icons.admin_panel_settings_rounded;
       default:
         return Icons.help_rounded;
     }
@@ -280,6 +299,8 @@ class ProfileScreen extends StatelessWidget {
         return Colors.green;
       case 'employer':
         return Colors.orange;
+      case 'admin':
+        return Colors.indigo;
       default:
         return Colors.grey;
     }
@@ -325,6 +346,105 @@ class ProfileScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _InviteButton extends StatelessWidget {
+  final User userToInvite;
+  const _InviteButton({required this.userToInvite});
+
+  Future<void> _showJobSelectionDialog(BuildContext context) async {
+    final jobProvider = Provider.of<JobProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final apiService = ApiService();
+
+    // Lọc ra các công việc của nhà tuyển dụng hiện tại
+    final employerJobs = jobProvider.jobs
+        .where((job) => job.employer.id == authProvider.user?.id)
+        .toList();
+
+    if (employerJobs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bạn chưa đăng công việc nào để mời.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final selectedJob = await showDialog<Job>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Mời ${userToInvite.name} ứng tuyển'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: employerJobs.length,
+              itemBuilder: (context, index) {
+                final job = employerJobs[index];
+                return ListTile(
+                  title: Text(job.title),
+                  subtitle: Text(job.company),
+                  onTap: () {
+                    Navigator.of(context).pop(job);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Hủy'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selectedJob != null && context.mounted) {
+      try {
+        await apiService.inviteToApply(userToInvite.id, selectedJob.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã gửi lời mời tới ${userToInvite.name} cho vị trí ${selectedJob.title}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi gửi lời mời: ${e.toString().replaceFirst("Exception: ", "")}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: () => _showJobSelectionDialog(context),
+        icon: const Icon(Icons.send_rounded),
+        label: const Text('Mời ứng tuyển'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 5,
+          shadowColor: Theme.of(context).primaryColor.withOpacity(0.4),
+        ),
+      ),
     );
   }
 }

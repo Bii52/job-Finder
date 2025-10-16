@@ -95,6 +95,37 @@ const jobController = {
       next(error);
     }
   },
+
+  inviteToApply: async (req, res, next) => {
+    try {
+      const { jobId } = req.body; // Employer will select a job to invite for
+      const jobSeekerId = req.params.id; // The user being invited
+
+      const job = await Job.findById(jobId);
+      if (!job) {
+        return next(new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy công việc'));
+      }
+
+      // Check if the person making the request is the employer for this job
+      if (job.employer.toString() !== req.user.id) {
+        return next(new ApiError(StatusCodes.FORBIDDEN, 'Bạn không có quyền mời ứng viên cho công việc này'));
+      }
+
+      const jobSeeker = await User.findById(jobSeekerId);
+      if (!jobSeeker || jobSeeker.role !== 'job_seeker') {
+        return next(new ApiError(StatusCodes.BAD_REQUEST, 'Chỉ có thể mời người tìm việc'));
+      }
+
+      // Check if user has already applied
+      if (job.applicants.some(applicant => applicant.user.toString() === jobSeekerId)) {
+        return next(new ApiError(StatusCodes.BAD_REQUEST, 'Người dùng này đã ứng tuyển vào công việc'));
+      }
+
+      res.status(StatusCodes.OK).json({ message: 'Lời mời đã được gửi thành công (chức năng đang phát triển)' });
+    } catch (error) {
+      next(error);
+    }
+  }
 };
 
 export default jobController;

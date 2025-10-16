@@ -39,7 +39,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _initSocket() {
     // Thay đổi URL nếu địa chỉ IP của bạn khác
-    _socket = IO.io('http://192.168.1.11:3000', <String, dynamic>{
+    _socket = IO.io('http://10.12.189.87:3000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': true,
     });

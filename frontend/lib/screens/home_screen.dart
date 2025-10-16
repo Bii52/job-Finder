@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/screens/admin_user_management_screen.dart';
+import 'package:frontend/screens/admin_job_management_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -105,8 +107,20 @@ class HomeScreen extends StatelessWidget {
                                 subtitle: 'Edit or delete users',
                                 color: Colors.teal,
                                 onTap: () {
-                                  // TODO: Navigate to a new AdminUserManagementScreen
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User management coming soon!')));
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminUserManagementScreen()));
+                                },
+                              ),
+                            if (authProvider.user?.role == 'admin')
+                              _MenuCard(
+                                icon: Icons.article_rounded,
+                                title: 'Manage Jobs',
+                                subtitle: 'View or delete jobs',
+                                color: Colors.indigo,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const AdminJobManagementScreen()),
+                                  );
                                 },
                               ),
                             _MenuCard(

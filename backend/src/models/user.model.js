@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -19,14 +19,17 @@ const UserSchema = new mongoose.Schema({
     enum: ['job_seeker', 'employer', 'admin'],
     default: 'job_seeker',
   },
+  favorites: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Job',
+    },
+  ],
   date: {
     type: Date,
     default: Date.now,
   },
-  favorites: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Job'
-  }]
 });
 
-module.exports = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', UserSchema);
+export default User;

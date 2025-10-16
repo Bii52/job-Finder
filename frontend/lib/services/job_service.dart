@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class JobService {
-  final String _baseUrl = 'http://192.168.1.11:3000';
+  final String _baseUrl = 'http://10.12.189.87:3000';
 
   Future<List<Job>> getJobs() async {
     final prefs = await SharedPreferences.getInstance();
@@ -17,6 +17,8 @@ class JobService {
     final response = await http.get(
       Uri.parse('$_baseUrl/api/jobs'),
       headers: {
+        // Thêm header này để đảm bảo dữ liệu luôn được lấy mới từ server khi refresh
+        'Cache-Control': 'no-cache',
         'Authorization': 'Bearer $token',
       },
     );
@@ -24,6 +26,9 @@ class JobService {
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       return data.map((json) => Job.fromJson(json)).toList();
+    } else if (response.statusCode == 304) {
+      // Not Modified - Dữ liệu không thay đổi, không cần làm gì, trả về danh sách rỗng để provider không báo lỗi
+      return [];
     } else {
       throw Exception('Failed to load jobs');
     }
